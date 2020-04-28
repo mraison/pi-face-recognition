@@ -18,6 +18,19 @@ from importlib.machinery import SourceFileLoader
 
 servo_client = SourceFileLoader("ServoClient", "/home/pi/proj/servo_control/servo_test.py").load_module()
 # sc = servo_client.ServoClient()
+servoConfig_X = {
+	"pin":11,
+	"Hz": 50
+}
+servoConfig_Y = {
+	"pin":12,
+	"Hz": 50
+}
+
+X_angle = 0
+Y_angle = 0
+servo_X = servo_client.ServoClient(servoConfig_X, 0)
+servo_Y = servo_client.ServoClient(servoConfig_Y, 0)
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -48,7 +61,11 @@ while True:
 	# to 500px (to speedup processing)
 	frame = vs.read()
 	
+	# mraison - attempting to flip.
+	frame = imutils.rotate(frame, 180)
+	
 	frame = imutils.resize(frame, width=500)
+	(frame_height, frame_width) = frame.shape[:2]
 	
 	# convert the input frame from (1) BGR to grayscale (for face
 	# detection) and (2) from BGR to RGB (for face recognition)
@@ -64,6 +81,9 @@ while True:
 	# but we need them in (top, right, bottom, left) order, so we
 	# need to do a bit of reordering
 	boxes = [(y, x + w, y + h, x) for (x, y, w, h) in rects]
+	# (top, right, bottom, left)
+	# mraison - I need to either pull the "center" of the squares from here
+	# 	or just calculate it from the top, bottom, left, and right param
 
 	# compute the facial embeddings for each face bounding box
 	encodings = face_recognition.face_encodings(rgb, boxes)
@@ -105,11 +125,30 @@ while True:
 		cv2.rectangle(frame, (left, top), (right, bottom),
 			(0, 255, 0), 2)
 		
-		
-		
 		y = top - 15 if top - 15 > 15 else top + 15
 		cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX,
 			0.75, (0, 255, 0), 2)
+			
+		# after drawing all that stuff then do the servo adjustment
+		# (left, top), (right, bottom)
+		# frame_height, frame_width
+		center_of_face_square = (
+			(right - left)/2 + left, # x
+			(bottom - top)/2 + top   # y
+		)
+		if center_of_face_square[0] > frame_width/2:
+			X_angle = X_angle + 1
+		elif center_of_face_square[0] < frame_width/2:
+			X_angle = X_angle - 1
+		
+		if center_of_face_square[1] > frame_height/2:
+			Y_angle = Y_angle + 1
+		elif center_of_face_square[1] < frame_height/2:
+			Y_angle = Y_angle - 1
+			
+		print("Angle adjustment found (%s, %s)" % (X_angle,Y_angle) )
+		servo_X.moveToAngle(X_angle)
+		servo_Y.moveToAngle(Y_angle)
 
 	# display the image to our screen
 	cv2.imshow("Frame", frame)
