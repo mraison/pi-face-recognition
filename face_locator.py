@@ -18,23 +18,23 @@ from importlib.machinery import SourceFileLoader
 
 
 ### servo initialization stuff.
-servo_client = SourceFileLoader("ServoClient", "/home/pi/proj/servo_control/servo_test.py").load_module()
-# sc = servo_client.ServoClient()
-servoConfig_X = {
-    "pin": 11,
-    "Hz": 50
-}
-servoConfig_Y = {
-    "pin": 12,
-    "Hz": 50
-}
+# servo_client = SourceFileLoader("ServoClient", "/home/pi/proj/servo_control/servo_test.py").load_module()
+# # sc = servo_client.ServoClient()
+# servoConfig_X = {
+#     "pin": 11,
+#     "Hz": 50
+# }
+# servoConfig_Y = {
+#     "pin": 12,
+#     "Hz": 50
+# }
+#
+# X_duty = 2
+# Y_duty = 2
+# servo_X = servo_client.ServoClient(servoConfig_X, 10)
+# servo_Y = servo_client.ServoClient(servoConfig_Y, 15)
 
-X_duty = 2
-Y_duty = 2
-servo_X = servo_client.ServoClient(servoConfig_X, 10)
-servo_Y = servo_client.ServoClient(servoConfig_Y, 15)
-
-class process_manager():
+class Process_Manager():
     def __init__(self):
         # construct the argument parser and parse the arguments
         ap = argparse.ArgumentParser()
@@ -132,7 +132,7 @@ class Stream():
         )
 
         # loop over the recognized faces
-        for ((top, right, bottom, left), name) in zip(input_from_face_finder.boxes, input_from_face_finder.names):
+        for ((top, right, bottom, left), name) in zip(input_from_face_finder['boxes'], input_from_face_finder['names']):
             if not name == "matthew_raison":
                 continue
 
@@ -177,15 +177,6 @@ class Stream():
 
 class Face_Finder():
     def __init__(self, encodings, cascade):
-        ### @todo move these parameter greps to the surface level rather than leaving these here. they look silly.
-        # construct the argument parser and parse the arguments
-        # ap = argparse.ArgumentParser()
-        # ap.add_argument("-c", "--cascade", required=True,
-        #                 help="path to where the face cascade resides")
-        # ap.add_argument("-e", "--encodings", required=True,
-        #                 help="path to serialized db of facial encodings")
-        # args = vars(ap.parse_args())
-
         ### This loads the faces for face recognition, so this can stay.
         # load the known faces and embeddings along with OpenCV's Haar
         # cascade for face detection
@@ -193,20 +184,7 @@ class Face_Finder():
         self.data = pickle.loads(open(encodings, "rb").read())  # @todo replace with param
         self.detector = cv2.CascadeClassifier(cascade)  # @todo replace with param
 
-
-        ### This sets up the video stream and doesn't actually pertain to the face recognition
-        # initialize the video stream and allow the camera sensor to warm up
-        # print("[INFO] starting video stream...")
-        # self.vs = VideoStream(src=0, usePiCamera=True).start()
-        # # vs = VideoStream(usePiCamera=True).start()
-        # time.sleep(2.0) ### @todo yeah remove this shit.
-        # # start the FPS counter
-        # self.fps = FPS().start()
-
     def find_face_in_frame(self, gray, rgb):
-        ### @todo refactor so that the boxes and name are returned rather than just loaded into the struct itself.
-        self.__initialize_frame()
-
         ### actually does face detection stuff.
         # detect faces in the grayscale frame
         rects = self.detector.detectMultiScale(gray, scaleFactor=1.1,
@@ -255,3 +233,7 @@ class Face_Finder():
         #     # update the list of names
         #     self.names.append(name) ### This is the main thing we care about for the return.
         return {'boxes': self.boxes, 'names': self.names}
+
+
+proc = Process_Manager()
+proc.run()
