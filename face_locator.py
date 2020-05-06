@@ -61,16 +61,6 @@ class Process_Manager():
 
 class Stream():
     def __init__(self):
-        ### @todo move these parameter greps to the surface level rather than leaving these here. they look silly.
-        # construct the argument parser and parse the arguments
-        ap = argparse.ArgumentParser()
-        ap.add_argument("-c", "--cascade", required=True,
-                        help="path to where the face cascade resides")
-        ap.add_argument("-e", "--encodings", required=True,
-                        help="path to serialized db of facial encodings")
-        args = vars(ap.parse_args())
-
-
         ### This sets up the video stream and doesn't actually pertain to the face recognition
         # initialize the video stream and allow the camera sensor to warm up
         print("[INFO] starting video stream...")
@@ -201,37 +191,37 @@ class Face_Finder():
 
         ### This actually identifies who is in the picture, not whether there is someone in frame. that's already done at this point.
         # compute the facial embeddings for each face bounding box
-        # encodings = face_recognition.face_encodings(self.rgb, self.boxes)
-        self.names = ["Unknown"] ### just set this to unknown for now...later this'll be populated with the face identification.
+        encodings = face_recognition.face_encodings(self.rgb, self.boxes)
+        self.names = [] #["Unknown"] ### just set this to unknown for now...later this'll be populated with the face identification.
         # loop over the facial embeddings
-        # for encoding in encodings:
-        #     # attempt to match each face in the input image to our known
-        #     # encodings
-        #     matches = face_recognition.compare_faces(self.data["encodings"],
-        #                                              encoding) ### @todo edit this module so that we only check for one face at a time.
-        #     name = "Unknown"
-        #
-        #     # check to see if we have found a match
-        #     if True in matches:
-        #         # find the indexes of all matched faces then initialize a
-        #         # dictionary to count the total number of times each face
-        #         # was matched
-        #         matchedIdxs = [i for (i, b) in enumerate(matches) if b]
-        #         counts = {}
-        #
-        #         # loop over the matched indexes and maintain a count for
-        #         # each recognized face face
-        #         for i in matchedIdxs:
-        #             name = self.data["names"][i]
-        #             counts[name] = counts.get(name, 0) + 1
-        #
-        #         # determine the recognized face with the largest number
-        #         # of votes (note: in the event of an unlikely tie Python
-        #         # will select first entry in the dictionary)
-        #         name = max(counts, key=counts.get)
-        #
-        #     # update the list of names
-        #     self.names.append(name) ### This is the main thing we care about for the return.
+        for encoding in encodings:
+            # attempt to match each face in the input image to our known
+            # encodings
+            matches = face_recognition.compare_faces(self.data["encodings"],
+                                                     encoding) ### @todo edit this module so that we only check for one face at a time.
+            name = "Unknown"
+
+            # check to see if we have found a match
+            if True in matches:
+                # find the indexes of all matched faces then initialize a
+                # dictionary to count the total number of times each face
+                # was matched
+                matchedIdxs = [i for (i, b) in enumerate(matches) if b]
+                counts = {}
+
+                # loop over the matched indexes and maintain a count for
+                # each recognized face face
+                for i in matchedIdxs:
+                    name = self.data["names"][i]
+                    counts[name] = counts.get(name, 0) + 1
+
+                # determine the recognized face with the largest number
+                # of votes (note: in the event of an unlikely tie Python
+                # will select first entry in the dictionary)
+                name = max(counts, key=counts.get)
+
+            # update the list of names
+            self.names.append(name) ### This is the main thing we care about for the return.
         return {'boxes': self.boxes, 'names': self.names}
 
 
