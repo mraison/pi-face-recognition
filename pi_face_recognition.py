@@ -27,10 +27,10 @@ servoConfig_Y = {
 	"Hz": 50
 }
 
-X_angle = 0
-Y_angle = 0
-servo_X = servo_client.ServoClient(servoConfig_X, 0)
-servo_Y = servo_client.ServoClient(servoConfig_Y, 0)
+X_duty = 2
+Y_duty = 2
+servo_X = servo_client.ServoClient(servoConfig_X, 10)
+servo_Y = servo_client.ServoClient(servoConfig_Y, 15)
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -118,9 +118,27 @@ while True:
 		
 		# update the list of names
 		names.append(name)
+		
+	# Center range of what I'll deam is "ok"
+		center_square_ok_range = (
+			int (frame_width/2 - 20), #left
+			int (frame_width/2 + 20), #right
+			int (frame_height/2 - 20), #top
+			int (frame_height/2 + 20) #bottom
+		)
+		cv2.rectangle(
+			frame, 
+			(center_square_ok_range[0], center_square_ok_range[2]), 
+			(center_square_ok_range[1], center_square_ok_range[3]),
+			(0, 255, 0),
+			2
+		)
 
 	# loop over the recognized faces
 	for ((top, right, bottom, left), name) in zip(boxes, names):
+		if not name == "matthew_raison":
+			continue
+		
 		# draw the predicted face name on the image
 		cv2.rectangle(frame, (left, top), (right, bottom),
 			(0, 255, 0), 2)
@@ -133,22 +151,46 @@ while True:
 		# (left, top), (right, bottom)
 		# frame_height, frame_width
 		center_of_face_square = (
-			(right - left)/2 + left, # x
-			(bottom - top)/2 + top   # y
+			int(((right - left)/2) + left), # x
+			int(((bottom - top)/2) + top)   # y
 		)
-		if center_of_face_square[0] > frame_width/2:
-			X_angle = X_angle + 1
-		elif center_of_face_square[0] < frame_width/2:
-			X_angle = X_angle - 1
 		
-		if center_of_face_square[1] > frame_height/2:
-			Y_angle = Y_angle + 1
-		elif center_of_face_square[1] < frame_height/2:
-			Y_angle = Y_angle - 1
+		# mraison - finding center.
+		cv2.rectangle(
+			frame, 
+			(center_of_face_square[0] -1, center_of_face_square[1] -1), 
+			(center_of_face_square[0] +1, center_of_face_square[1] +1),
+			(0, 255, 0),
+			2
+		)
+		if (
+			not (center_square_ok_range[0] <= center_of_face_square[0] and #left
+			center_square_ok_range[1] >= center_of_face_square[0] and #right
+			center_square_ok_range[2] >= center_of_face_square[1] and #top
+			center_square_ok_range[3] <= center_of_face_square[1])    #bottom
+		):
+			if center_of_face_square[0] > int(frame_width/2):
+				new_X_duty = X_duty - 0.10
+			elif center_of_face_square[0] < int(frame_width/2):
+				new_X_duty = X_duty + 0.10
 			
-		print("Angle adjustment found (%s, %s)" % (X_angle,Y_angle) )
-		servo_X.moveToAngle(X_angle)
-		servo_Y.moveToAngle(Y_angle)
+			if center_of_face_square[1] > int(frame_height/2):
+				new_Y_duty = Y_duty - 0.10
+			elif center_of_face_square[1] < int(frame_height/2):
+				new_Y_duty = Y_duty + 0.10
+			
+			# only apply the shift if it's within frame.
+			if new_Y_duty <= 22 and new_Y_duty >= 2:
+				Y_duty = new_Y_duty
+			
+			if new_X_duty <= 22 and new_X_duty >= 2:
+				X_duty = new_X_duty
+			
+			print("Angle adjustment found (%s, %s)" % (X_duty,Y_duty) )
+			servo_X.setDutyCycle(X_duty, 0.05)
+			#time.sleep(0.5)
+			servo_Y.setDutyCycle(Y_duty, 0.05)
+			#time.sleep(0.5)
 
 	# display the image to our screen
 	cv2.imshow("Frame", frame)
