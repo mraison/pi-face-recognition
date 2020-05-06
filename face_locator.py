@@ -191,7 +191,7 @@ class Face_Finder():
 
         ### This actually identifies who is in the picture, not whether there is someone in frame. that's already done at this point.
         # compute the facial embeddings for each face bounding box
-        encodings = face_recognition.face_encodings(self.rgb, self.boxes)
+        encodings = face_recognition.face_encodings(rgb, self.boxes)
         self.names = [] #["Unknown"] ### just set this to unknown for now...later this'll be populated with the face identification.
         # loop over the facial embeddings
         for encoding in encodings:
