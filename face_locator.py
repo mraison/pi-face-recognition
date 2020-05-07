@@ -113,9 +113,6 @@ class Stream():
 
         # loop over the recognized faces
         for ((top, right, bottom, left), name) in zip(input_from_face_finder['boxes'], input_from_face_finder['names']):
-            if not name == "matthew_raison":
-                continue
-
             # draw the predicted face name on the image
             cv2.rectangle(self.frame, (left, top), (right, bottom),
                           (0, 255, 0), 2)
@@ -181,9 +178,10 @@ class Face_Finder():
 
         ### This actually identifies who is in the picture, not whether there is someone in frame. that's already done at this point.
         # compute the facial embeddings for each face bounding box
-        encodings = face_recognition.face_encodings(rgb, [closest_face_box])
+        encodings = []
+        #encodings = face_recognition.face_encodings(rgb, [closest_face_box])
 
-        self.names = [] #["Unknown"] ### just set this to unknown for now...later this'll be populated with the face identification.
+        self.names = ['Unknown'] ### just set this to unknown for now...later this'll be populated with the face identification.
         # loop over the facial embeddings
         for encoding in encodings:
             # attempt to match each face in the input image to our known
@@ -213,10 +211,11 @@ class Face_Finder():
 
             # update the list of names
             self.names.append(name) ### This is the main thing we care about for the return.
-        return {'boxes': self.boxes, 'names': self.names}
+        print('box found: %s %s %s %s' % closest_face_box)
+        return {'boxes': [closest_face_box], 'names': self.names}
 
     def __select_closest_face(self, boxes):
-        closest_square = None
+        closest_square = (0,0,0,0)
         for (top, right, bottom, left) in boxes:
             if not closest_square:
                 closest_square = (top, right, bottom, left)
