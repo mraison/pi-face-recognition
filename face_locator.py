@@ -17,8 +17,8 @@ from importlib.machinery import SourceFileLoader
 
 
 ### servo initialization stuff.
-# servo_client = SourceFileLoader("ServoClient", "/home/pi/proj/servo_control/servo_test.py").load_module()
-# # sc = servo_client.ServoClient()
+servo_client = SourceFileLoader("ServoClient", "/home/pi/proj/servo_control/servo_test.py").load_module()
+# sc = servo_client.ServoClient()
 
 # servo_X = servo_client.ServoClient(servoConfig_X, 10)
 # servo_Y = servo_client.ServoClient(servoConfig_Y, 15)
@@ -41,6 +41,10 @@ class Config():
 class Process_Manager():
     def __init__(self, config):
         self.config = config
+        self.X_duty = 10
+        self.Y_duty = 15
+        self.servo_X = servo_client.ServoClient(config.servoConfig_X, self.X_duty)
+        self.servo_Y = servo_client.ServoClient(config.servoConfig_Y, self.Y_duty)
 
     def run(self, debug=True):
         stream = Stream()
@@ -53,6 +57,43 @@ class Process_Manager():
             frame = stream.read_frame_and_format()
             face_data = face_finder.find_face_in_frame(frame)
             stream.draw_debug_face_identification(face_data)
+            
+            center_of_face_square = (
+                int(((face_data[0][1] - face_data[0][3])/2) + face_data[0][3]),
+                int(((face_data[0][2] - face_data[0][0])/2) + face_data[0][0])
+            )
+            center_square_ok_range = (
+                int (500/2 - 20), #left
+                int (500/2 + 20), #right
+                int (300/2 - 20), #top
+                int (300/2 + 20) #bottom
+            )
+            if (
+                not (center_square_ok_range[0] <= center_of_face_square[0] and #left
+                center_square_ok_range[1] >= center_of_face_square[0] and #right
+                center_square_ok_range[2] >= center_of_face_square[1] and #top
+                center_square_ok_range[3] <= center_of_face_square[1])    #bottom
+            ):
+                if center_of_face_square[0] > int(250):
+                    new_X_duty = self.X_duty - 0.10
+                elif center_of_face_square[0] < int(250):
+                    new_X_duty = self.X_duty + 0.10
+                
+                if center_of_face_square[1] > int(250):
+                    new_Y_duty = self.Y_duty - 0.10
+                elif center_of_face_square[1] < int(250):
+                    new_Y_duty = self.Y_duty + 0.10
+                
+                # only apply the shift if it's within frame.
+                if new_Y_duty <= 22 and new_Y_duty >= 2:
+                    self.Y_duty = new_Y_duty
+                
+                if new_X_duty <= 22 and new_X_duty >= 2:
+                    self.X_duty = new_X_duty
+                
+                print("Angle adjustment found (%s, %s)" % (X_duty,Y_duty) )
+                self.servo_X.setDutyCycle(self.X_duty, 0.05)
+                self.servo_Y.setDutyCycle(self.Y_duty, 0.05)
 
         stream.tear_down()
 
@@ -88,7 +129,7 @@ class Stream():
         # attempting to flip.
         self.frame = imutils.rotate(self.frame, 180)
 
-        self.frame = imutils.resize(self.frame, width=500) # @todo general note if we're consistently resizing then the size of the frame will always be the same and the bottom two things can be made constant...
+        self.frame = imutils.resize(self.frame, width=500, height=300) # @todo general note if we're consistently resizing then the size of the frame will always be the same and the bottom two things can be made constant...
         (self.frame_height, self.frame_width) = self.frame.shape[:2] ### @todo make a whole separate frame struct so this can be saved in the same place.
 
         return self.frame
@@ -173,7 +214,7 @@ class Face_Finder():
         self.boxes = [(y, x + w, y + h, x) for (x, y, w, h) in rects] ### This is the main thing we care about for the return. @todo are there raiting associated with these? I'd rather only track one.
         # (top, right, bottom, left)
         # mraison - I need to either pull the "center" of the squares from here
-        # 	or just calculate it from the top, bottom, left, and right param
+        #   or just calculate it from the top, bottom, left, and right param
         closest_face_box = self.__select_closest_face(self.boxes)
 
         ### This actually identifies who is in the picture, not whether there is someone in frame. that's already done at this point.
