@@ -2,7 +2,6 @@
 # python encode_faces.py --dataset dataset/ --encoding encodings.pickle --detection-method hog
 #
 # python pi_face_recognition.py --cascade haarcascade_frontalface_default.xml --encodings encodings.pickle
-# python pi_face_recognition.py --cascade haarcascade_frontalface_default.xml --encodings encodings.pickle
 
 # import the necessary packages
 from imutils.video import VideoStream
@@ -20,40 +19,39 @@ from importlib.machinery import SourceFileLoader
 ### servo initialization stuff.
 # servo_client = SourceFileLoader("ServoClient", "/home/pi/proj/servo_control/servo_test.py").load_module()
 # # sc = servo_client.ServoClient()
-# servoConfig_X = {
-#     "pin": 11,
-#     "Hz": 50
-# }
-# servoConfig_Y = {
-#     "pin": 12,
-#     "Hz": 50
-# }
-#
-# X_duty = 2
-# Y_duty = 2
+
 # servo_X = servo_client.ServoClient(servoConfig_X, 10)
 # servo_Y = servo_client.ServoClient(servoConfig_Y, 15)
 
+class Config():
+    cascade = 'haarcascade_frontalface_default.xml'
+    encodings = 'encodings.pickle'
+    servoConfig_X = {
+        "pin": 11,
+        "Hz": 50
+    }
+    servoConfig_Y = {
+        "pin": 12,
+        "Hz": 50
+    }
+    X_duty = 2
+    Y_duty = 2
+
+
 class Process_Manager():
-    def __init__(self):
-        # construct the argument parser and parse the arguments
-        ap = argparse.ArgumentParser()
-        ap.add_argument("-c", "--cascade", required=True,
-                        help="path to where the face cascade resides")
-        ap.add_argument("-e", "--encodings", required=True,
-                        help="path to serialized db of facial encodings")
-        self.args = vars(ap.parse_args())
+    def __init__(self, config):
+        self.config = config
 
     def run(self, debug=True):
         stream = Stream()
-        face_finder = Face_Finder(self.args["encodings"], self.args["cascade"])
+        face_finder = Face_Finder(self.config.encodings, self.config.cascade)
         while True:
             key = cv2.waitKey(1) & 0xFF
             if key == ord("q"):
                 break
 
-            frame_data = stream.read_frame_and_format()
-            face_data = face_finder.find_face_in_frame(frame_data['gray'], frame_data['rgb'])
+            frame = stream.read_frame_and_format()
+            face_data = face_finder.find_face_in_frame(frame)
             stream.draw_debug_face_identification(face_data)
 
         stream.tear_down()
@@ -93,15 +91,7 @@ class Stream():
         self.frame = imutils.resize(self.frame, width=500) # @todo general note if we're consistently resizing then the size of the frame will always be the same and the bottom two things can be made constant...
         (self.frame_height, self.frame_width) = self.frame.shape[:2] ### @todo make a whole separate frame struct so this can be saved in the same place.
 
-        # convert the input frame from (1) BGR to grayscale (for face
-        # detection) and (2) from BGR to RGB (for face recognition)
-        self.gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
-        self.rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-        return {
-            'frame': self.frame,
-            'gray': self.gray,
-            'rgb': self.rgb
-        }
+        return self.frame
 
     def draw_debug_face_identification(self, input_from_face_finder):
         ### just by the way this is relying on the assumption that we'll only have one face present.
@@ -168,7 +158,12 @@ class Face_Finder():
         self.data = pickle.loads(open(encodings, "rb").read())  # @todo replace with param
         self.detector = cv2.CascadeClassifier(cascade)  # @todo replace with param
 
-    def find_face_in_frame(self, gray, rgb):
+    def find_face_in_frame(self, frame):
+        # convert the input frame from (1) BGR to grayscale (for face
+        # detection) and (2) from BGR to RGB (for face recognition)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
         ### actually does face detection stuff.
         # detect faces in the grayscale frame
         rects = self.detector.detectMultiScale(gray, scaleFactor=1.1,
@@ -182,10 +177,12 @@ class Face_Finder():
         # (top, right, bottom, left)
         # mraison - I need to either pull the "center" of the squares from here
         # 	or just calculate it from the top, bottom, left, and right param
+        closest_face_box = self.__select_closest_face(self.boxes)
 
         ### This actually identifies who is in the picture, not whether there is someone in frame. that's already done at this point.
         # compute the facial embeddings for each face bounding box
-        encodings = face_recognition.face_encodings(rgb, self.boxes)
+        encodings = face_recognition.face_encodings(rgb, [closest_face_box])
+
         self.names = [] #["Unknown"] ### just set this to unknown for now...later this'll be populated with the face identification.
         # loop over the facial embeddings
         for encoding in encodings:
@@ -218,6 +215,19 @@ class Face_Finder():
             self.names.append(name) ### This is the main thing we care about for the return.
         return {'boxes': self.boxes, 'names': self.names}
 
+    def __select_closest_face(self, boxes):
+        closest_square = None
+        for (top, right, bottom, left) in boxes:
+            if not closest_square:
+                closest_square = (top, right, bottom, left)
+            elif (right - left > closest_square[1] - closest_square[3]) or \
+                 (top - bottom > closest_square[0] - closest_square[2]):
+                closest_square = (top, right, bottom, left)
 
-proc = Process_Manager()
+        return closest_square
+
+
+
+
+proc = Process_Manager(Config())
 proc.run()
