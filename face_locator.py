@@ -85,18 +85,18 @@ class Stream():
         # tldr you can remove this whole function from the face_finder.
         # grab the frame from the threaded video stream and resize it
         # to 500px (to speedup processing)
-        frame = self.vs.read()
+        self.frame = self.vs.read()
 
         # attempting to flip.
-        frame = imutils.rotate(frame, 180)
+        self.frame = imutils.rotate(self.frame, 180)
 
-        self.frame = imutils.resize(frame, width=500) # @todo general note if we're consistently resizing then the size of the frame will always be the same and the bottom two things can be made constant...
-        (self.frame_height, self.frame_width) = frame.shape[:2] ### @todo make a whole separate frame struct so this can be saved in the same place.
+        self.frame = imutils.resize(self.frame, width=500) # @todo general note if we're consistently resizing then the size of the frame will always be the same and the bottom two things can be made constant...
+        (self.frame_height, self.frame_width) = self.frame.shape[:2] ### @todo make a whole separate frame struct so this can be saved in the same place.
 
         # convert the input frame from (1) BGR to grayscale (for face
         # detection) and (2) from BGR to RGB (for face recognition)
-        self.gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        self.rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        self.gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+        self.rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
         return {
             'frame': self.frame,
             'gray': self.gray,
@@ -154,12 +154,6 @@ class Stream():
         ### not technically part of the face recognition
         # display the image to our screen
         cv2.imshow("Frame", self.frame)
-
-        ### @todo move this to the looping layer. not here. Also again...not technically part of the face recognition.
-        # key = self.cv2.waitKey(1) & 0xFF
-        # # if the `q` key was pressed, break from the loop
-        # if key == ord("q"):
-        #     break
 
         # update the FPS counter
         self.fps.update()
