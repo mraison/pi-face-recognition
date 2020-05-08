@@ -34,21 +34,27 @@ class Config():
         "pin": 12,
         "Hz": 50
     }
-    X_duty = 2
-    Y_duty = 2
 
 
 class Process_Manager():
     def __init__(self, config):
         self.config = config
-        self.X_duty = 10
-        self.Y_duty = 15
+        self.X_duty = 2
+        self.Y_duty = 2
         self.servo_X = servo_client.ServoClient(config.servoConfig_X, self.X_duty)
         self.servo_Y = servo_client.ServoClient(config.servoConfig_Y, self.Y_duty)
 
     def run(self, debug=True):
         stream = Stream()
         face_finder = Face_Finder(self.config.encodings, self.config.cascade)
+
+        center_square_ok_range = (
+                int (500/2 - 20), #left
+                int (500/2 + 20), #right
+                int (300/2 - 20), #top
+                int (300/2 + 20) #bottom
+            )
+
         while True:
             key = cv2.waitKey(1) & 0xFF
             if key == ord("q"):
@@ -57,45 +63,43 @@ class Process_Manager():
             frame = stream.read_frame_and_format()
             face_data = face_finder.find_face_in_frame(frame)
             stream.draw_debug_face_identification(face_data)
+            if face_data['boxes'][0][0] == 0 and \
+                face_data['boxes'][0][1] == 0 and \
+                face_data['boxes'][0][2] == 0 and \
+                face_data['boxes'][0][3] == 0:
+                    continue
             
             center_of_face_square = (
-                int(((face_data[0][1] - face_data[0][3])/2) + face_data[0][3]),
-                int(((face_data[0][2] - face_data[0][0])/2) + face_data[0][0])
+                int(((face_data['boxes'][0][1] - face_data['boxes'][0][3])/2) + face_data['boxes'][0][3]),
+                int(((face_data['boxes'][0][2] - face_data['boxes'][0][0])/2) + face_data['boxes'][0][0])
             )
-            center_square_ok_range = (
-                int (500/2 - 20), #left
-                int (500/2 + 20), #right
-                int (300/2 - 20), #top
-                int (300/2 + 20) #bottom
-            )
-            if (
-                not (center_square_ok_range[0] <= center_of_face_square[0] and #left
-                center_square_ok_range[1] >= center_of_face_square[0] and #right
-                center_square_ok_range[2] >= center_of_face_square[1] and #top
-                center_square_ok_range[3] <= center_of_face_square[1])    #bottom
-            ):
-                if center_of_face_square[0] > int(250):
-                    new_X_duty = self.X_duty - 0.10
-                elif center_of_face_square[0] < int(250):
-                    new_X_duty = self.X_duty + 0.10
+            
+            new_X_duty = self.X_duty
+            if center_of_face_square[0] > center_square_ok_range[0]:
+                new_X_duty = new_X_duty - 0.50
+            elif center_square_ok_range[1] < center_of_face_square[0]:
+                new_X_duty = new_X_duty + 0.50
                 
-                if center_of_face_square[1] > int(250):
-                    new_Y_duty = self.Y_duty - 0.10
-                elif center_of_face_square[1] < int(250):
-                    new_Y_duty = self.Y_duty + 0.10
-                
-                # only apply the shift if it's within frame.
-                if new_Y_duty <= 22 and new_Y_duty >= 2:
-                    self.Y_duty = new_Y_duty
-                
-                if new_X_duty <= 22 and new_X_duty >= 2:
-                    self.X_duty = new_X_duty
-                
-                print("Angle adjustment found (%s, %s)" % (X_duty,Y_duty) )
-                self.servo_X.setDutyCycle(self.X_duty, 0.05)
-                self.servo_Y.setDutyCycle(self.Y_duty, 0.05)
-
+            if new_X_duty <= 22 and new_X_duty >= 2:
+                self.X_duty = new_X_duty
+                self.servo_X.setDutyCycle(self.X_duty, 0.1)
+            
+            
+            new_Y_duty = self.Y_duty
+            if center_square_ok_range[2] < center_of_face_square[1]:
+                new_Y_duty = new_Y_duty - 0.50
+            elif center_square_ok_range[3] > center_of_face_square[1]:
+                new_Y_duty = new_Y_duty + 0.50
+            
+            if new_Y_duty <= 22 and new_Y_duty >= 2:
+                self.Y_duty = new_Y_duty
+                self.servo_Y.setDutyCycle(self.Y_duty, 0.1)
+            
+            print("Angle adjustment found (%s, %s)" % (self.X_duty,self.Y_duty) )
+            
         stream.tear_down()
+        self.servo_X.setDutyCycle(2, 0.1)
+        self.servo_Y.setDutyCycle(2, 0.1)
 
 
 class Stream():
