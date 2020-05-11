@@ -12,6 +12,7 @@ import imutils
 import pickle
 import time
 import cv2
+import numpy
 
 from importlib.machinery import SourceFileLoader
 
@@ -34,6 +35,10 @@ class Config():
         "pin": 12,
         "Hz": 50
     }
+    direction_left = 'LEFT'
+    direction_right = 'RIGHT'
+    direction_up = 'UP'
+    direction_down = 'DOWN'
 
 
 class Process_Manager():
@@ -44,16 +49,91 @@ class Process_Manager():
         self.servo_X = servo_client.ServoClient(config.servoConfig_X, self.X_duty)
         self.servo_Y = servo_client.ServoClient(config.servoConfig_Y, self.Y_duty)
 
+    def __determine_which_way_to_turn(self, current_face_location, target_location):
+        # (top, right, bottom, left)
+        x_diff = current_face_location[1] - current_face_location[3]
+        y_diff = current_face_location[2] - current_face_location[0]
+
+        x_direction_turn = None
+        y_direction_turn = None
+
+        # left
+        if x_diff < int((target_location[3] - current_face_location[3])*2):
+            x_direction_turn = self.config.direction_left
+        # right
+        elif x_diff < int((current_face_location[1] - target_location[1])*2):
+            x_direction_turn = self.config.direction_right
+        # up
+        if y_diff < int((target_location[0] - current_face_location[0])*2):
+            y_direction_turn = self.config.direction_up
+        # down
+        elif y_diff < int((current_face_location[2] - target_location[2])*2):
+            y_direction_turn = self.config.direction_down
+
+        return {
+            'x': x_direction_turn,
+            'y': y_direction_turn
+        }
+
+    def __move_servo_in_direction(self, direction):
+        new_X_duty = self.X_duty
+        if direction['x'] == self.config.direction_left:
+            new_X_duty = new_X_duty - 0.50
+        elif direction['x'] == self.config.direction_right:
+            new_X_duty = new_X_duty + 0.50
+
+        new_Y_duty = self.Y_duty
+        if direction['y'] == self.config.direction_down:
+            new_Y_duty = new_Y_duty - 0.50
+        elif direction['y'] == self.config.direction_up:
+            new_Y_duty = new_Y_duty + 0.50
+
+        self.__set_servo_position(new_X_duty, new_Y_duty, 0.1)
+        print("Angle adjustment found (%s, %s)" % (self.X_duty, self.Y_duty))
+
+    def __set_servo_position(self, x_duty, y_duty, stepSize=1):
+        do_x = True
+        do_y = True
+        if x_duty > 22 or x_duty < 2:
+            do_x = False
+        if y_duty > 22 or y_duty < 2:
+            do_y = False
+        if not do_x and not do_y:
+            return 1
+        if x_duty == self.X_duty and y_duty == self.Y_duty:
+            return 0
+
+        # while current_duty_cycle < newDutyCycle:
+        max_x = max(self.X_duty, x_duty)
+        min_x = min(self.X_duty, x_duty)
+        do_flip_x = self.X_duty > x_duty
+        x_range = numpy.arange(min_x, max_x, stepSize)
+        if do_flip_x:
+            x_range = numpy.flip(x_range)
+
+        max_y = max(self.Y_duty, y_duty)
+        min_y = min(self.Y_duty, y_duty)
+        do_flip_y = self.Y_duty > y_duty
+        y_range = numpy.arange(min_y, max_y, stepSize)
+        if do_flip_y:
+            y_range = numpy.flip(y_range)
+
+        for i in range(stepSize):
+            self.servo_X._servo.ChangeDutyCycle(
+                x_range[i]
+            )
+            self.servo_Y._servo.ChangeDutyCycle(
+                y_range[i]
+            )
+            time.sleep(0.5)
+
+        self.X_duty = x_duty
+        self.Y_duty = y_duty
+        return 0
+
     def run(self, debug=True):
         stream = Stream()
         face_finder = Face_Finder(self.config.encodings, self.config.cascade)
-
-        center_square_ok_range = (
-                int (500/2 - 20), #left
-                int (500/2 + 20), #right
-                int (300/2 - 20), #top
-                int (300/2 + 20) #bottom
-            )
 
         while True:
             key = cv2.waitKey(1) & 0xFF
@@ -63,40 +143,20 @@ class Process_Manager():
             frame = stream.read_frame_and_format()
             face_data = face_finder.find_face_in_frame(frame)
             stream.draw_debug_face_identification(face_data)
-            if face_data['boxes'][0][0] == 0 and \
-                face_data['boxes'][0][1] == 0 and \
-                face_data['boxes'][0][2] == 0 and \
-                face_data['boxes'][0][3] == 0:
-                    continue
-            
-            center_of_face_square = (
-                int(((face_data['boxes'][0][1] - face_data['boxes'][0][3])/2) + face_data['boxes'][0][3]),
-                int(((face_data['boxes'][0][2] - face_data['boxes'][0][0])/2) + face_data['boxes'][0][0])
-            )
-            
-            new_X_duty = self.X_duty
-            if center_of_face_square[0] > center_square_ok_range[0]:
-                new_X_duty = new_X_duty - 0.50
-            elif center_square_ok_range[1] < center_of_face_square[0]:
-                new_X_duty = new_X_duty + 0.50
-                
-            if new_X_duty <= 22 and new_X_duty >= 2:
-                self.X_duty = new_X_duty
-                self.servo_X.setDutyCycle(self.X_duty, 0.1)
-            
-            
-            new_Y_duty = self.Y_duty
-            if center_square_ok_range[2] < center_of_face_square[1]:
-                new_Y_duty = new_Y_duty - 0.50
-            elif center_square_ok_range[3] > center_of_face_square[1]:
-                new_Y_duty = new_Y_duty + 0.50
-            
-            if new_Y_duty <= 22 and new_Y_duty >= 2:
-                self.Y_duty = new_Y_duty
-                self.servo_Y.setDutyCycle(self.Y_duty, 0.1)
-            
-            print("Angle adjustment found (%s, %s)" % (self.X_duty,self.Y_duty) )
-            
+
+            position_to_move = self.__determine_which_way_to_turn(
+                    face_data['boxes'][0],
+                    stream.get_center_of_frame()
+                )
+
+            if key == ord("m"):
+                self.__move_servo_in_direction(
+                    position_to_move
+                )
+
+            if key == ord("d"):
+                print("x direction: %s | y direction: %s" % (position_to_move['x'], position_to_move['y']))
+
         stream.tear_down()
         self.servo_X.setDutyCycle(2, 0.1)
         self.servo_Y.setDutyCycle(2, 0.1)
@@ -137,6 +197,15 @@ class Stream():
         (self.frame_height, self.frame_width) = self.frame.shape[:2] ### @todo make a whole separate frame struct so this can be saved in the same place.
 
         return self.frame
+
+    def get_center_of_frame(self):
+        # (top, right, bottom, left)
+        return [
+            int(self.frame_height / 2 - 20),  # top
+            int(self.frame_width / 2 + 20),   # right
+            int(self.frame_height / 2 + 20),  # bottom
+            int(self.frame_width / 2 - 20)    # left
+        ]
 
     def draw_debug_face_identification(self, input_from_face_finder):
         ### just by the way this is relying on the assumption that we'll only have one face present.
