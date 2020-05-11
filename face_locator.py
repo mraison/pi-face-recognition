@@ -44,8 +44,8 @@ class Config():
 class Process_Manager():
     def __init__(self, config):
         self.config = config
-        self.X_duty = 2
-        self.Y_duty = 2
+        self.X_duty = 0
+        self.Y_duty = 0
         self.servo_X = servo_client.ServoClient(config.servoConfig_X, self.X_duty)
         self.servo_Y = servo_client.ServoClient(config.servoConfig_Y, self.Y_duty)
 
@@ -78,18 +78,18 @@ class Process_Manager():
     def __move_servo_in_direction(self, direction):
         new_X_duty = self.X_duty
         if direction['x'] == self.config.direction_left:
-            new_X_duty = new_X_duty - 0.50
+            new_X_duty = self.X_duty - 1.0
         elif direction['x'] == self.config.direction_right:
-            new_X_duty = new_X_duty + 0.50
+            new_X_duty = self.X_duty + 1.0
 
         new_Y_duty = self.Y_duty
         if direction['y'] == self.config.direction_down:
-            new_Y_duty = new_Y_duty - 0.50
+            new_Y_duty = self.Y_duty - 1.0
         elif direction['y'] == self.config.direction_up:
-            new_Y_duty = new_Y_duty + 0.50
+            new_Y_duty = self.Y_duty + 1.0
 
-        self.__set_servo_position(new_X_duty, new_Y_duty, 0.1)
-        print("Angle adjustment found (%s, %s)" % (self.X_duty, self.Y_duty))
+        print("Angle adjustment from (%s, %s) to (%s, %s)" % (self.X_duty, self.Y_duty, new_X_duty, new_Y_duty))
+        self.__set_servo_position(new_X_duty, new_Y_duty, 0.5)
 
     def __set_servo_position(self, x_duty, y_duty, stepSize=1):
         do_x = True
@@ -118,22 +118,35 @@ class Process_Manager():
         if do_flip_y:
             y_range = numpy.flip(y_range)
 
-        for i in range(stepSize):
-            self.servo_X._servo.ChangeDutyCycle(
-                x_range[i]
-            )
-            self.servo_Y._servo.ChangeDutyCycle(
-                y_range[i]
-            )
+        max_x_range = len(x_range)
+        max_y_range = len(y_range)
+        for i in range(max(max_x_range, max_y_range)):
+            if do_x and i < max_x_range:
+                self.servo_X._servo.ChangeDutyCycle(
+                    x_range[i]
+                )
+            if do_y and i < max_y_range:
+                self.servo_Y._servo.ChangeDutyCycle(
+                    y_range[i]
+                )
             time.sleep(0.5)
 
-        self.X_duty = x_duty
-        self.Y_duty = y_duty
+        if do_x:
+            self.X_duty = x_duty
+        if do_y:
+            self.Y_duty = y_duty
+        self.servo_Y._servo.ChangeDutyCycle(
+                    0
+                )
+        self.servo_X._servo.ChangeDutyCycle(
+                    0
+                )
         return 0
 
     def run(self, debug=True):
         stream = Stream()
         face_finder = Face_Finder(self.config.encodings, self.config.cascade)
+        self.__set_servo_position(2,2,0.5)
 
         while True:
             key = cv2.waitKey(1) & 0xFF
@@ -158,8 +171,9 @@ class Process_Manager():
                 print("x direction: %s | y direction: %s" % (position_to_move['x'], position_to_move['y']))
 
         stream.tear_down()
-        self.servo_X.setDutyCycle(2, 0.1)
-        self.servo_Y.setDutyCycle(2, 0.1)
+        self.__set_servo_position(2,2,0.5)
+        #self.servo_X.setDutyCycle(2, 0.1)
+        #self.servo_Y.setDutyCycle(2, 0.1)
 
 
 class Stream():
@@ -325,7 +339,7 @@ class Face_Finder():
 
             # update the list of names
             self.names.append(name) ### This is the main thing we care about for the return.
-        print('box found: %s %s %s %s' % closest_face_box)
+        # print('box found: %s %s %s %s' % closest_face_box)
         return {'boxes': [closest_face_box], 'names': self.names}
 
     def __select_closest_face(self, boxes):
