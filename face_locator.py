@@ -103,33 +103,40 @@ class Process_Manager():
         if x_duty == self.X_duty and y_duty == self.Y_duty:
             return 0
 
+        self.servo_X._servo.ChangeDutyCycle(
+                x_duty
+            )
+        self.servo_Y._servo.ChangeDutyCycle(
+                y_duty
+            )
+
         # while current_duty_cycle < newDutyCycle:
-        max_x = max(self.X_duty, x_duty)
-        min_x = min(self.X_duty, x_duty)
-        do_flip_x = self.X_duty > x_duty
-        x_range = numpy.arange(min_x, max_x, stepSize)
-        if do_flip_x:
-            x_range = numpy.flip(x_range)
-
-        max_y = max(self.Y_duty, y_duty)
-        min_y = min(self.Y_duty, y_duty)
-        do_flip_y = self.Y_duty > y_duty
-        y_range = numpy.arange(min_y, max_y, stepSize)
-        if do_flip_y:
-            y_range = numpy.flip(y_range)
-
-        max_x_range = len(x_range)
-        max_y_range = len(y_range)
-        for i in range(max(max_x_range, max_y_range)):
-            if do_x and i < max_x_range:
-                self.servo_X._servo.ChangeDutyCycle(
-                    x_range[i]
-                )
-            if do_y and i < max_y_range:
-                self.servo_Y._servo.ChangeDutyCycle(
-                    y_range[i]
-                )
-            time.sleep(0.5)
+        # max_x = max(self.X_duty, x_duty)
+        # min_x = min(self.X_duty, x_duty)
+        # do_flip_x = self.X_duty > x_duty
+        # x_range = numpy.arange(min_x, max_x, stepSize)
+        # if do_flip_x:
+        #     x_range = numpy.flip(x_range)
+        #
+        # max_y = max(self.Y_duty, y_duty)
+        # min_y = min(self.Y_duty, y_duty)
+        # do_flip_y = self.Y_duty > y_duty
+        # y_range = numpy.arange(min_y, max_y, stepSize)
+        # if do_flip_y:
+        #     y_range = numpy.flip(y_range)
+        #
+        # max_x_range = len(x_range)
+        # max_y_range = len(y_range)
+        # for i in range(max(max_x_range, max_y_range)):
+        #     if do_x and i < max_x_range:
+        #         self.servo_X._servo.ChangeDutyCycle(
+        #             x_range[i]
+        #         )
+        #     if do_y and i < max_y_range:
+        #         self.servo_Y._servo.ChangeDutyCycle(
+        #             y_range[i]
+        #         )
+        #     time.sleep(0.5)
 
         if do_x:
             self.X_duty = x_duty
