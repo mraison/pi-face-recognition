@@ -103,12 +103,16 @@ class Process_Manager():
         if x_duty == self.X_duty and y_duty == self.Y_duty:
             return 0
 
-        self.servo_X._servo.ChangeDutyCycle(
-                x_duty
-            )
-        self.servo_Y._servo.ChangeDutyCycle(
-                y_duty
-            )
+        if do_x:
+            self.servo_X._servo.ChangeDutyCycle(
+                    x_duty
+                )
+        if do_y:
+            self.servo_Y._servo.ChangeDutyCycle(
+                    y_duty
+                )
+        if do_x or do_y:
+            time.sleep(0.5)
 
         # while current_duty_cycle < newDutyCycle:
         # max_x = max(self.X_duty, x_duty)
