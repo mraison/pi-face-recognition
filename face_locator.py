@@ -143,7 +143,17 @@ class Process_Manager():
                 )
         return 0
 
-    def run(self, debug=True):
+    def __auto_adjust_servos(self, face_data, stream):
+        position_to_move = self.__determine_which_way_to_turn(
+            face_data['boxes'][0],
+            stream.get_center_of_frame()
+        )
+
+        self.__move_servo_in_direction(
+            position_to_move
+        )
+
+    def run(self, train=False):
         stream = Stream()
         face_finder = Face_Finder(self.config.encodings, self.config.cascade)
         self.__set_servo_position(2,2,0.5)
@@ -157,17 +167,37 @@ class Process_Manager():
             face_data = face_finder.find_face_in_frame(frame)
             stream.draw_debug_face_identification(face_data)
 
-            position_to_move = self.__determine_which_way_to_turn(
-                    face_data['boxes'][0],
-                    stream.get_center_of_frame()
+            ## adjust position...
+            if key == ord("m") and not train:
+                self.__auto_adjust_servos(
+                    face_data, stream
                 )
 
-            if key == ord("m"):
-                self.__move_servo_in_direction(
-                    position_to_move
-                )
+            ## train method fork
+            new_X_duty = self.X_duty
+            new_Y_duty = self.Y_duty
+            if key == ord("d") and not train:
+                #right
+                new_X_duty = self.X_duty + 1.0
+            if key == ord("a") and not train:
+                #left
+                new_X_duty = self.X_duty - 1.0
+            if key == ord("w") and not train:
+                #up
+                new_Y_duty = self.Y_duty + 1.0
+            if key == ord("s") and not train:
+                #down
+                new_Y_duty = self.Y_duty - 1.0
 
-            if key == ord("d"):
+            if new_X_duty != self.X_duty or new_Y_duty != self.Y_duty:
+                self.__set_servo_position(new_X_duty, new_Y_duty, 0.5)
+
+            if key == ord("k") and not train:
+                #save state
+                pass
+
+
+            if key == ord("p"):
                 print("x direction: %s | y direction: %s" % (position_to_move['x'], position_to_move['y']))
 
         stream.tear_down()
