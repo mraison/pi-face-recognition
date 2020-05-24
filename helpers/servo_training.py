@@ -1,6 +1,10 @@
 import json
 import os
+import numpy
 
+def convert(o):
+    if isinstance(o, numpy.int64): return int(o)
+    # raise TypeError
 
 class config():
     json_file_path = os.path.join(os.path.dirname(__file__), 'data/servo_data.json')
@@ -53,10 +57,13 @@ class servo_data_trainer():
     
     def load(self):
         if not os.path.exists(config.json_file_path):
-            return
+            self.save_data()
 
         with open(config.json_file_path, 'r', encoding='utf-8') as json_file:
             data_points = training_data_collection(json.load(json_file))
+            if not data_points:
+                return
+            
             for data_point in data_points:
                  self.data.append(
                     training_data_struct(data_point)
@@ -64,22 +71,22 @@ class servo_data_trainer():
     
     def save_data(self):
         with open(config.json_file_path, 'w', encoding='utf-8') as json_file:
-            json.dump(self.data, json_file, ensure_ascii=False, indent=4)
+            json.dump(self.data, json_file, ensure_ascii=False, indent=4, default=convert)
 
 
-# c = servo_data_trainer()
-# c.load()
-# c.data.append(
-#     training_data_struct(
-#         {
-#             'face_location_box': [1,2,3,4],
-#             'x_angle_delta': 1,
-#             'y_angle_delta': 1
-#         }
-#     )
-# )
+#c = servo_data_trainer()
+#c.load()
+#c.data.append(
+#    training_data_struct(
+#        {
+#            'face_location_box': [1,2,3,4],
+#            'x_angle_delta': 1,
+#            'y_angle_delta': 1
+#        }
+#    )
+#)
 
-# c.save_data()
+#c.save_data()
 # ^^^ data management is now set up.
 # Now for the thing that will actually run the tests.
 

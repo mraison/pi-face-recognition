@@ -13,7 +13,8 @@ import pickle
 import time
 import cv2
 import numpy
-from helpers.servo_training import servo_data_trainer, training_data_struct
+from helpers.servo_training import servo_data_trainer, training_data_struct, convert
+import json
 
 from importlib.machinery import SourceFileLoader
 
@@ -224,6 +225,16 @@ class Process_Manager():
                 })
 
                 trainer.data.append(datapoint)
+                print(start_face_location_box)
+                print(end_x_angle - start_x_angle)
+                print(end_y_angle - start_y_angle)
+                print(end_x_angle)
+                print(end_y_angle)
+                print(start_x_angle)
+                print(start_y_angle)
+                print(json.dumps(trainer.data, default=convert))
+                
+                print(datapoint['face_location_box'])
 
 
             if key == ord("p"):

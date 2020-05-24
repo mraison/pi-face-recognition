@@ -1,22 +1,62 @@
 [
     {
-        "y_angle_adjustment": 1,
-        "x_angle_adjustment": 1,
+        "y_angle_delta": 0,
         "face_location_box": [
-            1,
-            2,
-            3,
-            4
-        ]
+            null,
+            null,
+            null,
+            null
+        ],
+        "x_angle_delta": 0
     },
     {
-        "y_angle_adjustment": 1,
-        "x_angle_adjustment": 1,
+        "y_angle_delta": 0,
         "face_location_box": [
-            1,
-            2,
-            3,
-            4
-        ]
+            null,
+            null,
+            null,
+            null
+        ],
+        "x_angle_delta": 0
+    },
+    {
+        "y_angle_delta": 0,
+        "face_location_box": [
+            null,
+            null,
+            null,
+            null
+        ],
+        "x_angle_delta": 0
+    },
+    {
+        "y_angle_delta": 0,
+        "face_location_box": [
+            null,
+            null,
+            null,
+            null
+        ],
+        "x_angle_delta": 0
+    },
+    {
+        "y_angle_delta": 2.0,
+        "face_location_box": [
+            null,
+            null,
+            null,
+            null
+        ],
+        "x_angle_delta": 2.0
+    },
+    {
+        "y_angle_delta": 0,
+        "face_location_box": [
+            null,
+            null,
+            null,
+            null
+        ],
+        "x_angle_delta": 0
     }
 ]
