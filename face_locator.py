@@ -13,6 +13,7 @@ import pickle
 import time
 import cv2
 import numpy
+from helpers.servo_training import servo_data_trainer, training_data_struct
 
 from importlib.machinery import SourceFileLoader
 
@@ -168,6 +169,8 @@ class Process_Manager():
         stream = Stream()
         face_finder = Face_Finder(self.config.encodings, self.config.cascade)
         self.__set_servo_position(2,2,0.5)
+        trainer = servo_data_trainer()
+        trainer.load()
 
         while True:
             key = cv2.waitKey(1) & 0xFF
@@ -204,13 +207,29 @@ class Process_Manager():
                 self.__set_servo_position(new_X_duty, new_Y_duty, 0.5)
 
             if key == ord("k") and not train:
-                #save state
-                pass
+                #start data capture for training
+                start_face_location_box = face_data['boxes'][0]
+                start_x_angle = self.X_duty
+                start_y_angle = self.Y_duty
+
+            if key == ord("l") and not train:
+                #end data capture for training
+                end_face_location_box = face_data['boxes'][0]
+                end_x_angle = self.X_duty
+                end_y_angle = self.Y_duty
+                datapoint = training_data_struct({
+                    'face_location_box': start_face_location_box,
+                    'x_angle_delta': end_x_angle - start_x_angle,
+                    'y_angle_delta': end_y_angle - start_y_angle
+                })
+
+                trainer.data.append(datapoint)
 
 
             if key == ord("p"):
                 print("x direction: %s | y direction: %s" % (position_to_move['x'], position_to_move['y']))
 
+        trainer.save_data()
         stream.tear_down()
         self.__set_servo_position(2,2,0.5)
         #self.servo_X.setDutyCycle(2, 0.1)

@@ -9,8 +9,8 @@ class config():
 class training_data_struct(dict):
     VALID_KEYS = [
         'face_location_box',
-        'x_angle_adjustment',
-        'y_angle_adjustment'
+        'x_angle_delta',
+        'y_angle_delta'
     ]
     
     def __init__(self, *args, **kwargs):
@@ -47,8 +47,14 @@ class training_data_collection(list):
 class servo_data_trainer():
     def __init__(self):
         self.data = training_data_collection()
+
+    def set_data(self, data: training_data_collection):
+        self.data = data
     
     def load(self):
+        if not os.path.exists(config.json_file_path):
+            return
+
         with open(config.json_file_path, 'r', encoding='utf-8') as json_file:
             data_points = training_data_collection(json.load(json_file))
             for data_point in data_points:
@@ -61,17 +67,18 @@ class servo_data_trainer():
             json.dump(self.data, json_file, ensure_ascii=False, indent=4)
 
 
-c = servo_data_trainer()
-c.load()
-c.data.append(
-    training_data_struct(
-        {
-            'face_location_box': [1,2,3,4],
-            'x_angle_adjustment': 1,
-            'y_angle_adjustment': 1
-        }
-    )
-)
+# c = servo_data_trainer()
+# c.load()
+# c.data.append(
+#     training_data_struct(
+#         {
+#             'face_location_box': [1,2,3,4],
+#             'x_angle_delta': 1,
+#             'y_angle_delta': 1
+#         }
+#     )
+# )
+
 # c.save_data()
 # ^^^ data management is now set up.
 # Now for the thing that will actually run the tests.
