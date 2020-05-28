@@ -13,30 +13,30 @@ class training_data_struct(dict):
         'y_angle_delta'
     ]
     
-    def __init__(self, *args, **kwargs):
-        self.update(*args, **kwargs)
-    
-    def __setitem__(self, key, value):
-        if key in self.VALID_KEYS:
-            super().__setitem__(key, value)
-        else:
-            raise TypeError('Invalid key used: %s' % key)
-    
-    def update(self, *args, **kwargs):
-        if args:
-            if len(args) > 1:
-                raise TypeError("update expected at most 1 arguments, "
-                                "got %d" % len(args))
-            other = dict(args[0])
-            for key in other:
-                self[key] = other[key]
-        for key in kwargs:
-            self[key] = kwargs[key]
-
-    def setdefault(self, key, value=None):
-        if key not in self:
-            self[key] = value
-        return self[key]
+    # def __init__(self, *args, **kwargs):
+    #     self.update(*args, **kwargs)
+    #
+    # def __setitem__(self, key, value):
+    #     if key in self.VALID_KEYS:
+    #         super().__setitem__(key, value)
+    #     else:
+    #         raise TypeError('Invalid key used: %s' % key)
+    #
+    # def update(self, *args, **kwargs):
+    #     if args:
+    #         if len(args) > 1:
+    #             raise TypeError("update expected at most 1 arguments, "
+    #                             "got %d" % len(args))
+    #         other = dict(args[0])
+    #         for key in other:
+    #             self[key] = other[key]
+    #     for key in kwargs:
+    #         self[key] = kwargs[key]
+    #
+    # def setdefault(self, key, value=None):
+    #     if key not in self:
+    #         self[key] = value
+    #     return self[key]
         
 
 class training_data_collection(list):
