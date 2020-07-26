@@ -48,6 +48,8 @@ class Process_Manager():
         self.config = config
         self.X_duty = 0
         self.Y_duty = 0
+
+        # servo set up
         self.servo_X = servo_client.ServoClient(config.servoConfig_X, self.X_duty)
         self.servo_Y = servo_client.ServoClient(config.servoConfig_Y, self.Y_duty)
 
@@ -96,6 +98,7 @@ class Process_Manager():
     def __set_servo_position(self, x_duty, y_duty, stepSize=1):
         do_x = True
         do_y = True
+        # validation steps.
         if x_duty > 22 or x_duty < 2:
             do_x = False
         if y_duty > 22 or y_duty < 2:
@@ -105,6 +108,8 @@ class Process_Manager():
         if x_duty == self.X_duty and y_duty == self.Y_duty:
             return 0
 
+
+        # @todo combine these into a singular call.
         if do_x:
             self.servo_X._servo.ChangeDutyCycle(
                     x_duty
@@ -113,6 +118,8 @@ class Process_Manager():
             self.servo_Y._servo.ChangeDutyCycle(
                     y_duty
                 )
+
+        # final step. outside of the servo change.
         if do_x or do_y:
             time.sleep(0.5)
 
@@ -144,10 +151,14 @@ class Process_Manager():
         #         )
         #     time.sleep(0.5)
 
+        # update the state of the x/y coordinates
+        # @todo update this to live in one place.
         if do_x:
             self.X_duty = x_duty
         if do_y:
             self.Y_duty = y_duty
+
+        # Return servo control to stopped position.
         self.servo_Y._servo.ChangeDutyCycle(
                     0
                 )
@@ -169,7 +180,9 @@ class Process_Manager():
     def run(self, train=False):
         stream = Stream()
         face_finder = Face_Finder(self.config.encodings, self.config.cascade)
+
         self.__set_servo_position(2,2,0.5)
+
         trainer = servo_data_trainer()
         trainer.load()
 
@@ -188,42 +201,43 @@ class Process_Manager():
                     face_data, stream
                 )
 
+            if key == ord("p"):
+                print("x direction: %s | y direction: %s" % (position_to_move['x'], position_to_move['y']))
+
+            ## data training - exclude for usual thread.
             ## train method fork
             new_X_duty = self.X_duty
             new_Y_duty = self.Y_duty
+
             if key == ord("d") and not train:
-                #right
+                # right
                 new_X_duty = self.X_duty + 1.0
             if key == ord("a") and not train:
-                #left
+                # left
                 new_X_duty = self.X_duty - 1.0
             if key == ord("w") and not train:
-                #up
+                # up
                 new_Y_duty = self.Y_duty + 1.0
             if key == ord("s") and not train:
-                #down
+                # down
                 new_Y_duty = self.Y_duty - 1.0
-
             if new_X_duty != self.X_duty or new_Y_duty != self.Y_duty:
-                self.__set_servo_position(new_X_duty, new_Y_duty, 0.5)
-
+                    self.__set_servo_position(new_X_duty, new_Y_duty, 0.5)
             if key == ord("k") and not train:
-                #start data capture for training
+                # start data capture for training
                 start_face_location_box = face_data['boxes'][0]
                 start_x_angle = self.X_duty
                 start_y_angle = self.Y_duty
-
             if key == ord("l") and not train:
-                #end data capture for training
-                end_face_location_box = face_data['boxes'][0]
+                # end data capture for training
+                # end_face_location_box = face_data['boxes'][0]
                 end_x_angle = self.X_duty
                 end_y_angle = self.Y_duty
                 datapoint = training_data_struct({
-                    'face_location_box': start_face_location_box,
-                    'x_angle_delta': end_x_angle - start_x_angle,
-                    'y_angle_delta': end_y_angle - start_y_angle
+                        'face_location_box': start_face_location_box,
+                        'x_angle_delta': end_x_angle - start_x_angle,
+                        'y_angle_delta': end_y_angle - start_y_angle
                 })
-
                 trainer.data.append(datapoint)
                 print(start_face_location_box)
                 print(end_x_angle - start_x_angle)
@@ -236,15 +250,9 @@ class Process_Manager():
                 
                 print(datapoint['face_location_box'])
 
-
-            if key == ord("p"):
-                print("x direction: %s | y direction: %s" % (position_to_move['x'], position_to_move['y']))
-
         trainer.save_data()
         stream.tear_down()
         self.__set_servo_position(2,2,0.5)
-        #self.servo_X.setDutyCycle(2, 0.1)
-        #self.servo_Y.setDutyCycle(2, 0.1)
 
 
 class Stream():

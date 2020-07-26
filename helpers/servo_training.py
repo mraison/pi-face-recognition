@@ -10,12 +10,12 @@ class config():
     json_file_path = os.path.join(os.path.dirname(__file__), 'data/servo_data.json')
 
 
-class training_data_struct(dict):
-    VALID_KEYS = [
-        'face_location_box',
-        'x_angle_delta',
-        'y_angle_delta'
-    ]
+# class training_data_struct(dict):
+#     VALID_KEYS = [
+#         'face_location_box',
+#         'x_angle_delta',
+#         'y_angle_delta'
+#     ]
     
     # def __init__(self, *args, **kwargs):
     #     self.update(*args, **kwargs)
@@ -43,16 +43,16 @@ class training_data_struct(dict):
     #     return self[key]
         
 
-class training_data_collection(list):
-    def append(self, data: training_data_struct):
-        super().append(data)
+# class training_data_collection(list):
+#     def append(self, data: training_data_struct):
+#         super().append(data)
     
 
 class servo_data_trainer():
     def __init__(self):
-        self.data = training_data_collection()
+        self.data = []
 
-    def set_data(self, data: training_data_collection):
+    def set_data(self, data=[]):
         self.data = data
     
     def load(self):
@@ -60,13 +60,14 @@ class servo_data_trainer():
             self.save_data()
 
         with open(config.json_file_path, 'r', encoding='utf-8') as json_file:
-            data_points = training_data_collection(json.load(json_file))
+            data_points = list(json.load(json_file))
             if not data_points:
                 return
-            
+
             for data_point in data_points:
                  self.data.append(
-                    training_data_struct(data_point)
+                     data_point
+                    # training_data_struct(data_point)
                  )
     
     def save_data(self):
