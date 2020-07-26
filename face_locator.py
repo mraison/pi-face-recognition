@@ -13,7 +13,7 @@ import pickle
 import time
 import cv2
 import numpy
-from helpers.servo_training import servo_data_trainer, training_data_struct, convert
+from helpers.servo_training import servo_data_trainer, convert
 import json
 
 from importlib.machinery import SourceFileLoader
