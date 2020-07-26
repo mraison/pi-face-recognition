@@ -233,11 +233,11 @@ class Process_Manager():
                 # end_face_location_box = face_data['boxes'][0]
                 end_x_angle = self.X_duty
                 end_y_angle = self.Y_duty
-                datapoint = training_data_struct({
+                datapoint = {
                         'face_location_box': start_face_location_box,
                         'x_angle_delta': end_x_angle - start_x_angle,
                         'y_angle_delta': end_y_angle - start_y_angle
-                })
+                }
                 trainer.data.append(datapoint)
                 print(start_face_location_box)
                 print(end_x_angle - start_x_angle)
