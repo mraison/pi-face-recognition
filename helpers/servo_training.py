@@ -8,6 +8,7 @@ def convert(o):
     else:
         return o # raise TypeError
 
+
 class config():
     json_file_path = os.path.join(os.path.dirname(__file__), 'data/servo_data.json')
 
