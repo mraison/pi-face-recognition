@@ -3,8 +3,10 @@ import os
 import numpy
 
 def convert(o):
-    if isinstance(o, numpy.int64): return int(o)
-    # raise TypeError
+    if isinstance(o, numpy.int64):
+        return int(o)
+    else:
+        return o # raise TypeError
 
 class config():
     json_file_path = os.path.join(os.path.dirname(__file__), 'data/servo_data.json')

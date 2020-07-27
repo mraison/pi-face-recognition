@@ -46,8 +46,8 @@ class Config():
 class Process_Manager():
     def __init__(self, config):
         self.config = config
-        self.X_duty = 0
-        self.Y_duty = 0
+        self.X_duty = 0.0
+        self.Y_duty = 0.0
 
         # servo set up
         self.servo_X = servo_client.ServoClient(config.servoConfig_X, self.X_duty)
@@ -211,28 +211,50 @@ class Process_Manager():
 
             if key == ord("d") and not train:
                 # right
-                new_X_duty = self.X_duty + 1.0
+                new_X_duty = self.X_duty + 0.2
             if key == ord("a") and not train:
                 # left
-                new_X_duty = self.X_duty - 1.0
+                new_X_duty = self.X_duty - 0.2
             if key == ord("w") and not train:
                 # up
-                new_Y_duty = self.Y_duty + 1.0
+                new_Y_duty = self.Y_duty + 0.2
             if key == ord("s") and not train:
                 # down
-                new_Y_duty = self.Y_duty - 1.0
+                new_Y_duty = self.Y_duty - 0.2
             if new_X_duty != self.X_duty or new_Y_duty != self.Y_duty:
                     self.__set_servo_position(new_X_duty, new_Y_duty, 0.5)
             if key == ord("k") and not train:
                 # start data capture for training
                 start_face_location_box = face_data['boxes'][0]
+
+                if start_face_location_box[0] == 0 and \
+                    start_face_location_box[1] == 0 and \
+                    start_face_location_box[2] == 0 and \
+                    start_face_location_box[3] == 0:
+                        print('face not found. not recording.')
+
+                # # start data capture for training
+                # start_face_location_box = face_data['boxes'][0]
                 start_x_angle = self.X_duty
                 start_y_angle = self.Y_duty
             if key == ord("l") and not train:
+                if start_face_location_box[0] == 0 and \
+                    start_face_location_box[1] == 0 and \
+                    start_face_location_box[2] == 0 and \
+                    start_face_location_box[3] == 0:
+                        print('face not found. not recording.')
+
                 # end data capture for training
                 # end_face_location_box = face_data['boxes'][0]
                 end_x_angle = self.X_duty
                 end_y_angle = self.Y_duty
+                # Convert all int64's into int.
+                start_face_location_box = (
+					int(start_face_location_box[0]),
+					int(start_face_location_box[1]),
+					int(start_face_location_box[2]),
+					int(start_face_location_box[3])
+                )
                 datapoint = {
                         'face_location_box': start_face_location_box,
                         'x_angle_delta': end_x_angle - start_x_angle,
@@ -241,6 +263,7 @@ class Process_Manager():
                 trainer.data.append(datapoint)
                 print(start_face_location_box)
                 print(trainer.data[-1]['face_location_box'])
+                print(type(trainer.data[-1]['face_location_box'][0]))
                 print(json.dumps(trainer.data, default=convert))
                 
                 print(datapoint['face_location_box'])

@@ -1,62 +1,32 @@
 [
     {
-        "y_angle_delta": 0,
+        "y_angle_delta": 1.0,
+        "x_angle_delta": 2.0,
         "face_location_box": [
-            null,
-            null,
-            null,
-            null
-        ],
-        "x_angle_delta": 0
+            0,
+            0,
+            0,
+            0
+        ]
     },
     {
-        "y_angle_delta": 0,
+        "y_angle_delta": -1.0,
+        "x_angle_delta": 2.0,
         "face_location_box": [
-            null,
-            null,
-            null,
-            null
-        ],
-        "x_angle_delta": 0
+            57,
+            278,
+            201,
+            134
+        ]
     },
     {
-        "y_angle_delta": 0,
+        "y_angle_delta": 1.0,
+        "x_angle_delta": -2.0,
         "face_location_box": [
-            null,
-            null,
-            null,
-            null
-        ],
-        "x_angle_delta": 0
-    },
-    {
-        "y_angle_delta": 0,
-        "face_location_box": [
-            null,
-            null,
-            null,
-            null
-        ],
-        "x_angle_delta": 0
-    },
-    {
-        "y_angle_delta": 2.0,
-        "face_location_box": [
-            null,
-            null,
-            null,
-            null
-        ],
-        "x_angle_delta": 2.0
-    },
-    {
-        "y_angle_delta": 0,
-        "face_location_box": [
-            null,
-            null,
-            null,
-            null
-        ],
-        "x_angle_delta": 0
+            0,
+            0,
+            0,
+            0
+        ]
     }
 ]
